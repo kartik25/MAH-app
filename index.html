@@ -1,20 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reader</title>
 <style>
-  /* ---------- Theme tokens ---------- */
-  :root {
+  /* ====================================================================
+     THEME TOKENS — light & dark. Toggle via <html data-theme="…">.
+     Present view reuses these same tokens so it follows the theme too.
+     ==================================================================== */
+  html[data-theme="light"] {
     --bg: #f5f5f4;
     --panel: #ffffff;
     --ink: #1c1917;
     --muted: #a8a29e;
     --dim: #d6d3d1;
     --accent: #2563eb;
+    --accent-soft: rgba(37,99,235,.28);
     --border: #e7e5e4;
     --shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+  html[data-theme="dark"] {
+    --bg: #0e0e10;
+    --panel: #18181b;
+    --ink: #ededed;
+    --muted: #6b6b70;
+    --dim: #3a3a3f;
+    --accent: #f59e0b;          /* warm pivot/ticks read nicely on dark */
+    --accent-soft: rgba(245,158,11,.30);
+    --border: #2a2a2e;
+    --shadow: 0 1px 3px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.5);
   }
 
   * { box-sizing: border-box; }
@@ -26,45 +41,29 @@
     background: var(--bg);
     color: var(--ink);
   }
-
-  body {
-    display: flex;
-    flex-direction: column;
-  }
+  body { display: flex; flex-direction: column; }
 
   /* ---------- Top bar / controls ---------- */
   header {
     flex: 0 0 auto;
-    padding: 14px 20px;
+    padding: 12px 20px;
     background: var(--panel);
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow);
     z-index: 5;
   }
+  .titlebar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .titlebar .spacer { margin-left: auto; }
 
-  .title {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0 0 12px;
-  }
-
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-  }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .divider { width: 1px; height: 24px; background: var(--border); }
 
   button {
-    font: inherit;
-    font-weight: 600;
+    font: inherit; font-weight: 600;
     border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--ink);
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
+    background: var(--panel); color: var(--ink);
+    padding: 8px 14px; border-radius: 8px; cursor: pointer;
     transition: background .12s, border-color .12s, transform .04s;
   }
   button:hover { border-color: var(--muted); }
@@ -72,152 +71,105 @@
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   button.primary:hover { filter: brightness(1.05); }
   button:disabled { opacity: .4; cursor: not-allowed; }
+  .icon-btn { padding: 8px 10px; }
 
-  .speed {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: auto;
-  }
+  .speed { display: flex; align-items: center; gap: 8px; margin-left: auto; }
   .speed input[type=range] { width: 160px; accent-color: var(--accent); }
-  .speed .wpm-val {
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    min-width: 64px;
-    text-align: right;
-  }
+  .speed .wpm-val { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 64px; text-align: right; }
 
-  /* ---------- Loader (textarea) ---------- */
+  /* ---------- Loader / source bar ---------- */
   .loader {
-    flex: 0 0 auto;
-    padding: 14px 20px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex: 0 0 auto; padding: 12px 20px;
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
   }
   .loader.hidden { display: none; }
   textarea {
-    width: 100%;
-    min-height: 120px;
-    resize: vertical;
-    font: inherit;
-    line-height: 1.5;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg);
-    color: var(--ink);
+    width: 100%; min-height: 110px; resize: vertical;
+    font: inherit; line-height: 1.5; padding: 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--ink);
   }
-  .loader-row { display: flex; gap: 10px; align-items: center; }
+  .loader-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .hint { color: var(--muted); font-size: 13px; }
+  .parse-status { color: var(--accent); font-size: 13px; font-weight: 600; }
+
+  /* Calibration panel */
+  .calib { display: none; gap: 10px; flex-direction: column;
+    border: 1px dashed var(--border); border-radius: 8px; padding: 12px; }
+  .calib.open { display: flex; }
+  .calib p.passage { margin: 0; line-height: 1.6; font-size: 17px; }
+  .calib .result { font-weight: 700; color: var(--accent); }
 
   /* ---------- Stage (shared) ---------- */
-  .stage {
-    flex: 1 1 auto;
-    position: relative;
-    overflow: hidden;
-    min-height: 0;
-  }
+  .stage { flex: 1 1 auto; position: relative; overflow: hidden; min-height: 0; }
 
-  /* ===== READ view (RSVP) ===== */
-  #readView {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-  }
+  /* ===== READ view (RSVP with fixed ORP pivot) ===== */
+  #readView { position: absolute; inset: 0; background: var(--bg); }
   #readView.hidden { display: none; }
 
-  /* The reading line sits on a fixed centre point. We anchor the current
-     word's centre to the middle of the screen so the eye never moves. */
-  .read-line {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    font-size: clamp(28px, 6vw, 64px);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .read-line .ctx { color: var(--dim); }
-  .read-line .ctx.near { color: var(--muted); }
-  .read-line .cur { color: var(--ink); }
-  /* A small fixation marker above the centre. */
-  .fixation {
-    position: absolute;
-    top: calc(50% - 70px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 26px;
-    background: var(--accent);
-    opacity: .5;
-  }
+  /* The line is clipped; we translate it so the current word's pivot
+     letter always lands on the same focal x. The eye never moves. */
+  .orp-clip { position: absolute; inset: 0; overflow: hidden;
+    display: flex; align-items: center; }
+  .orp-line { white-space: nowrap; font-size: clamp(30px, 6vw, 64px);
+    font-weight: 600; will-change: transform; }
+  .orp-line .w { color: var(--ink); }
+  .orp-line .cur .pivot { color: var(--accent); }
+
+  /* Fixed tick marks above & below the focal column. */
+  .orp-ticks { position: absolute; top: 0; bottom: 0; width: 0; pointer-events: none; }
+  .orp-ticks .tick { position: absolute; transform: translateX(-50%);
+    width: 2px; background: var(--accent); opacity: .65; }
+  .orp-ticks .tick.top { top: calc(50% - 62px); height: 26px; }
+  .orp-ticks .tick.bot { top: calc(50% + 36px); height: 26px; }
 
   /* ===== PRESENT view (scrolling teleprompter) ===== */
-  #presentView {
-    position: absolute;
-    inset: 0;
-    background: #0a0a0a;
-    color: #e5e5e5;
-    overflow: hidden;
-  }
+  #presentView { position: absolute; inset: 0; background: var(--bg);
+    color: var(--ink); overflow: hidden; }
   #presentView.hidden { display: none; }
   .present-scroll {
-    padding: 40vh 8vw;          /* big top/bottom pad so first & last lines can centre */
-    font-size: clamp(28px, 4.5vw, 52px);
-    line-height: 1.6;
-    font-weight: 600;
-    transition: transform .25s ease-out;
-    will-change: transform;
+    padding: 40vh 8vw; font-size: clamp(28px, 4.5vw, 52px);
+    line-height: 1.6; font-weight: 600;
+    transition: transform .25s ease-out; will-change: transform;
   }
-  .present-scroll w {
-    display: inline;
-    color: #525252;             /* unread / read words dimmed */
-    transition: color .1s;
-  }
-  .present-scroll w.cur {
-    color: #fafafa;
-    background: rgba(37,99,235,.35);
-    border-radius: 4px;
-    padding: 0 2px;
-  }
-  .present-scroll w.read { color: #8a8a8a; }
+  .present-scroll w { display: inline; color: var(--dim); transition: color .1s; }
+  .present-scroll w.cur { color: var(--ink); background: var(--accent-soft);
+    border-radius: 4px; padding: 0 2px; }
+  .present-scroll w.read { color: var(--muted); }
 
-  /* ---------- Progress bar ---------- */
-  .progress {
-    position: absolute;
-    left: 0; bottom: 0;
-    height: 3px;
-    width: 0%;
-    background: var(--accent);
-    transition: width .1s linear;
-    z-index: 4;
-  }
+  /* ---------- Progress + status (both views) ---------- */
+  .progress-wrap { position: absolute; left: 0; right: 0; bottom: 0;
+    height: 14px; cursor: pointer; z-index: 4; }
+  .progress { position: absolute; left: 0; bottom: 0; height: 4px; width: 0%;
+    background: var(--accent); transition: width .1s linear; }
+  .status { position: absolute; right: 14px; bottom: 14px; z-index: 4;
+    font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
+    color: var(--muted); background: var(--panel); padding: 4px 10px;
+    border-radius: 999px; border: 1px solid var(--border); opacity: .9; }
 
-  .empty {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    font-size: 16px;
-    text-align: center;
-    padding: 20px;
-  }
+  .empty { position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; color: var(--muted); font-size: 16px;
+    text-align: center; padding: 20px; }
+
+  /* ---------- Focus / distraction-free mode ---------- */
+  body.focus header, body.focus .loader { display: none; }
+  .focus-exit { position: absolute; top: 14px; right: 14px; z-index: 6; display: none; }
+  body.focus .focus-exit { display: inline-flex; }
 </style>
 </head>
 <body>
   <header>
-    <h1 class="title">Reader</h1>
+    <div class="titlebar">
+      <h1 class="title">Reader</h1>
+      <span class="spacer"></span>
+      <button id="themeBtn" class="icon-btn" title="Toggle light/dark (also persists)">🌙 Dark</button>
+      <button id="focusBtn" class="icon-btn" title="Distraction-free (F)">⤢ Focus</button>
+    </div>
     <div class="controls">
-      <button id="toggleLoader">Text</button>
+      <button id="toggleLoader">Text &amp; Sources</button>
       <button id="viewToggle">View: Read</button>
-      <span style="width:1px;height:24px;background:var(--border)"></span>
+      <span class="divider"></span>
       <button id="playPause" class="primary" disabled>Play</button>
       <button id="restart" disabled>Restart</button>
       <div class="speed">
@@ -232,23 +184,50 @@
     <textarea id="input" placeholder="Paste your text here, then press Load…"></textarea>
     <div class="loader-row">
       <button id="load" class="primary">Load</button>
-      <span class="hint">Tip: Space = play/pause, ← → step, R = restart.</span>
+      <button id="sampleBtn">Load sample</button>
+      <button id="calibBtn">Calibrate speed</button>
+      <span class="divider"></span>
+      <button id="fileBtn">Open file (.txt / .pdf / .epub)</button>
+      <input id="fileInput" type="file" accept=".txt,.pdf,.epub" style="display:none" />
+      <span id="parseStatus" class="parse-status"></span>
+    </div>
+    <div class="loader-row hint">Tip: Space = play/pause · ← → step · R restart · F focus mode.</div>
+
+    <div class="calib" id="calib">
+      <div class="hint">Read the passage below at your normal, comfortable pace. Press
+        <b>Start</b> when you begin and <b>Done</b> the instant you finish — we'll set
+        your wpm from that (you can still fine-tune the slider afterwards).</div>
+      <p class="passage" id="calibPassage"></p>
+      <div class="loader-row">
+        <button id="calibStart" class="primary">Start</button>
+        <button id="calibDone" disabled>Done</button>
+        <span class="result" id="calibResult"></span>
+      </div>
     </div>
   </section>
 
   <main class="stage">
-    <div class="fixation" id="fixation" style="display:none"></div>
+    <button id="focusExit" class="focus-exit">✕ Exit focus</button>
 
+    <!-- READ (RSVP) -->
     <div id="readView">
       <div class="empty" id="readEmpty">Load some text to start reading.</div>
-      <div class="read-line" id="readLine" style="display:none"></div>
+      <div class="orp-clip" id="orpClip" style="display:none">
+        <div class="orp-line" id="orpLine"></div>
+      </div>
+      <div class="orp-ticks" id="orpTicks" style="display:none">
+        <span class="tick top"></span><span class="tick bot"></span>
+      </div>
     </div>
 
+    <!-- PRESENT (teleprompter) -->
     <div id="presentView" class="hidden">
       <div class="present-scroll" id="presentScroll"></div>
     </div>
 
-    <div class="progress" id="progress"></div>
+    <!-- Progress + status (shared by both views) -->
+    <div class="status" id="status"></div>
+    <div class="progress-wrap" id="progressWrap"><div class="progress" id="progress"></div></div>
   </main>
 
 <script>
@@ -256,99 +235,75 @@
   "use strict";
 
   /* =========================================================================
-     TIMING LOGIC  (this is the part you'll want to tune)
+     TIMING LOGIC  (the part you'll want to tune)
      -------------------------------------------------------------------------
-     Each word is shown for a "dwell time" in milliseconds. We build it up
-     from three additive pieces:
+       dwell = base + (lengthBonus + punctuationBonus) * factor
 
-       dwell = base + lengthBonus + punctuationBonus
-
-     1) base: derived from words-per-minute.
-          baseMs = 60000 / wpm
-        e.g. 350 wpm -> ~171 ms per word as the floor.
-
-     2) lengthBonus: longer words need more time to recognise. We only start
-        charging after a "free" length, then add a flat cost per extra
-        character. Tune LEN_FREE (chars that are free) and LEN_PER_CHAR
-        (ms added per character beyond that).
-
-     3) punctuationBonus: trailing punctuation marks a phrase/sentence
-        boundary, so we pause. A comma/semicolon/colon is a small pause;
-        a sentence-ender (. ! ?) is a bigger pause; paragraph breaks add
-        the most. These are EXTRA milliseconds on top of the word.
-
-     Everything scales sensibly: lengthBonus and punctuationBonus are also
-     divided down a touch at very high wpm via the SCALE factor so fast mode
-     still feels fast. Set SCALE pieces to taste.
+     1) base = 60000 / wpm           -> the per-word floor.
+     2) lengthBonus: characters beyond LEN_FREE cost LEN_PER_CHAR ms each,
+        capped at LEN_MAX_BONUS — longer words get more recognition time.
+     3) punctuationBonus: trailing , ; : = small pause; . ! ? = sentence
+        pause; paragraph break = biggest pause.
+     factor gently shrinks the bonuses as wpm rises above BONUS_BASE_WPM so
+     fast mode still feels fast (bounded below by BONUS_MIN).
      ========================================================================= */
-
-  // --- Tunable constants -------------------------------------------------
-  var LEN_FREE      = 6;    // characters that cost no extra time
-  var LEN_PER_CHAR  = 22;   // ms added per character beyond LEN_FREE
-  var LEN_MAX_BONUS = 220;  // cap so one giant word can't stall forever
-
+  var LEN_FREE      = 6;    // chars that cost no extra time
+  var LEN_PER_CHAR  = 22;   // ms per char beyond LEN_FREE
+  var LEN_MAX_BONUS = 220;  // cap on length bonus
   var PUNCT_COMMA   = 120;  // , ; : —  small breath
   var PUNCT_SENT    = 320;  // . ! ?    sentence pause
-  var PUNCT_PARA    = 500;  // blank line / paragraph break, biggest pause
-
-  // At high wpm the bonuses feel heavy, so gently shrink them as speed rises.
-  // factor = clamp(baseWpm / wpm, MIN, 1). At/below baseWpm -> full bonus.
-  var BONUS_BASE_WPM = 300; // bonuses are "full strength" at this wpm
+  var PUNCT_PARA    = 500;  // paragraph break, biggest pause
+  var BONUS_BASE_WPM = 300; // bonuses at full strength at/below this wpm
   var BONUS_MIN      = 0.45;
 
-  /**
-   * Compute dwell time (ms) for one token given current wpm.
-   * @param {object} tok  {text, trailing, paraBreak}
-   * @param {number} wpm
-   */
   function dwellFor(tok, wpm) {
     var base = 60000 / wpm;
-
-    // Bonus scaling factor for fast speeds.
     var factor = BONUS_BASE_WPM / wpm;
     if (factor > 1) factor = 1;
     if (factor < BONUS_MIN) factor = BONUS_MIN;
 
-    // 2) length bonus — based on the visible word length (no punctuation).
     var len = tok.text.replace(/[^\w]/g, "").length;
     var lenBonus = Math.max(0, len - LEN_FREE) * LEN_PER_CHAR;
     if (lenBonus > LEN_MAX_BONUS) lenBonus = LEN_MAX_BONUS;
 
-    // 3) punctuation bonus — look at the trailing punctuation we captured.
     var punctBonus = 0;
-    if (tok.paraBreak) {
-      punctBonus = PUNCT_PARA;
-    } else if (/[.!?]["')\]]?$/.test(tok.trailing)) {
-      punctBonus = PUNCT_SENT;
-    } else if (/[,;:—–]$/.test(tok.trailing)) {
-      punctBonus = PUNCT_COMMA;
-    }
+    if (tok.paraBreak) punctBonus = PUNCT_PARA;
+    else if (/[.!?]["')\]]?$/.test(tok.trailing)) punctBonus = PUNCT_SENT;
+    else if (/[,;:—–]$/.test(tok.trailing)) punctBonus = PUNCT_COMMA;
 
     return Math.round(base + (lenBonus + punctBonus) * factor);
   }
 
   /* =========================================================================
-     TOKENISER
-     Splits raw text into word tokens. We keep each word's trailing
-     punctuation (for the pause logic) and flag whether a paragraph break
-     (blank line / double newline) follows the word.
+     READING FOCAL POINT (ORP — Optimal Recognition Point)
+     The pivot letter sits a fixed fraction from the word's start (Spritz
+     table). FOCAL_RATIO is where on screen that pivot is pinned.
+     ========================================================================= */
+  var FOCAL_RATIO = 0.40;   // 0 = far left, 0.5 = centre. Slightly left reads best.
+  function orpIndex(w) {
+    var n = w.length;
+    if (n <= 1) return 0;
+    if (n <= 5) return 1;
+    if (n <= 9) return 2;
+    if (n <= 13) return 3;
+    return 4;
+  }
+
+  /* =========================================================================
+     TOKENISER — keep trailing punctuation + flag paragraph breaks.
      ========================================================================= */
   function tokenize(raw) {
     var tokens = [];
-    // Split into "paragraphs" on blank lines so we can flag paragraph breaks.
     var paras = raw.replace(/\r\n/g, "\n").split(/\n[ \t]*\n+/);
     for (var p = 0; p < paras.length; p++) {
       var words = paras[p].split(/\s+/).filter(Boolean);
       for (var i = 0; i < words.length; i++) {
         var w = words[i];
-        // capture trailing punctuation cluster (e.g. "word!" -> "!", "end").
         var m = w.match(/([^\w]+)$/);
-        var trailing = m ? m[1] : "";
-        var isLastInPara = (i === words.length - 1);
         tokens.push({
           text: w,
-          trailing: trailing,
-          paraBreak: isLastInPara && p < paras.length - 1
+          trailing: m ? m[1] : "",
+          paraBreak: (i === words.length - 1) && p < paras.length - 1
         });
       }
     }
@@ -356,40 +311,28 @@
   }
 
   /* =========================================================================
-     PLAYER STATE
+     STATE + DOM
      ========================================================================= */
-  var tokens = [];
-  var index = 0;
-  var playing = false;
-  var timer = null;
-  var wpm = 350;
-  var view = "read"; // "read" | "present"
-
-  // Default wpm per view (set on toggle / first load).
+  var tokens = [], index = 0, playing = false, timer = null;
+  var wpm = 350, view = "read";
   var DEFAULT_WPM = { read: 350, present: 140 };
 
-  // --- DOM refs ----------------------------------------------------------
   var $ = function (id) { return document.getElementById(id); };
-  var elInput     = $("input");
-  var elLoader    = $("loader");
-  var elReadView  = $("readView");
-  var elReadLine  = $("readLine");
-  var elReadEmpty = $("readEmpty");
-  var elPresent   = $("presentView");
-  var elScroll    = $("presentScroll");
-  var elPlay      = $("playPause");
-  var elRestart   = $("restart");
-  var elWpm       = $("wpm");
-  var elWpmVal    = $("wpmVal");
-  var elProgress  = $("progress");
-  var elViewBtn   = $("viewToggle");
-  var elFixation  = $("fixation");
+  var elInput = $("input"), elLoader = $("loader");
+  var elReadView = $("readView"), elReadEmpty = $("readEmpty");
+  var elOrpClip = $("orpClip"), elOrpLine = $("orpLine"), elOrpTicks = $("orpTicks");
+  var elPresent = $("presentView"), elScroll = $("presentScroll");
+  var elPlay = $("playPause"), elRestart = $("restart");
+  var elWpm = $("wpm"), elWpmVal = $("wpmVal");
+  var elProgress = $("progress"), elProgWrap = $("progressWrap"), elStatus = $("status");
+  var elViewBtn = $("viewToggle"), elThemeBtn = $("themeBtn"), elParse = $("parseStatus");
 
   /* =========================================================================
-     LOADING
+     LOADING / TEXT SOURCES
      ========================================================================= */
-  function load() {
-    tokens = tokenize(elInput.value);
+  function loadText(text) {
+    elInput.value = text;
+    tokens = tokenize(text);
     index = 0;
     stop();
     var has = tokens.length > 0;
@@ -398,43 +341,147 @@
     if (has) {
       buildPresentDOM();
       elReadEmpty.style.display = "none";
-      elReadLine.style.display = "flex";
-      elFixation.style.display = view === "read" ? "block" : "none";
+      elOrpClip.style.display = "flex";
+      elOrpTicks.style.display = view === "read" ? "block" : "none";
       elLoader.classList.add("hidden");
     } else {
       elReadEmpty.style.display = "flex";
-      elReadLine.style.display = "none";
-      elFixation.style.display = "none";
+      elOrpClip.style.display = "none";
+      elOrpTicks.style.display = "none";
     }
     render();
   }
 
-  /* =========================================================================
-     RENDERING — READ (RSVP) view
-     Shows the current word centred with 2 words of context on each side,
-     dimmed. The centre word is anchored so it doesn't drift.
-     ========================================================================= */
-  function renderRead() {
-    if (!tokens.length) return;
-    elReadLine.innerHTML = "";
-    for (var d = -2; d <= 2; d++) {
-      var i = index + d;
-      if (i < 0 || i >= tokens.length) continue;
-      var span = document.createElement("span");
-      span.textContent = tokens[i].text;
-      if (d === 0) {
-        span.className = "cur";
-      } else {
-        span.className = "ctx" + (Math.abs(d) === 1 ? " near" : "");
-      }
-      elReadLine.appendChild(span);
+  // Lazy CDN loader — only fetched when a PDF/EPUB is actually opened, so the
+  // page still works fully offline for paste / .txt.
+  var _scripts = {};
+  function loadScript(src) {
+    if (_scripts[src]) return _scripts[src];
+    _scripts[src] = new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = res;
+      s.onerror = function () { rej(new Error("Failed to load " + src)); };
+      document.head.appendChild(s);
+    });
+    return _scripts[src];
+  }
+
+  function setParse(msg) { elParse.textContent = msg || ""; }
+
+  async function parsePdf(file) {
+    setParse("Loading PDF engine…");
+    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    var buf = await file.arrayBuffer();
+    var pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+    var out = [];
+    for (var p = 1; p <= pdf.numPages; p++) {
+      setParse("Reading PDF page " + p + " / " + pdf.numPages + "…");
+      var page = await pdf.getPage(p);
+      var tc = await page.getTextContent();
+      out.push(tc.items.map(function (it) { return it.str; }).join(" "));
+    }
+    return out.join("\n\n");
+  }
+
+  // EPUB via JSZip directly (read OPF -> spine -> strip HTML). Avoids needing
+  // a second ebook library.
+  async function parseEpub(file) {
+    setParse("Loading EPUB engine…");
+    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+    var zip = await window.JSZip.loadAsync(await file.arrayBuffer());
+    var container = await zip.file("META-INF/container.xml").async("string");
+    var cdoc = new DOMParser().parseFromString(container, "application/xml");
+    var opfPath = cdoc.querySelector("rootfile").getAttribute("full-path");
+    var opf = await zip.file(opfPath).async("string");
+    var odoc = new DOMParser().parseFromString(opf, "application/xml");
+    var base = opfPath.indexOf("/") >= 0 ? opfPath.replace(/[^/]*$/, "") : "";
+    var items = {};
+    odoc.querySelectorAll("manifest > item").forEach(function (it) {
+      items[it.getAttribute("id")] = it.getAttribute("href");
+    });
+    var order = [];
+    odoc.querySelectorAll("spine > itemref").forEach(function (ir) {
+      var href = items[ir.getAttribute("idref")];
+      if (href) order.push(href);
+    });
+    var parts = [];
+    for (var i = 0; i < order.length; i++) {
+      setParse("Reading EPUB section " + (i + 1) + " / " + order.length + "…");
+      var f = zip.file(base + decodeURIComponent(order[i]));
+      if (!f) continue;
+      var html = await f.async("string");
+      var d = new DOMParser().parseFromString(html, "text/html");
+      parts.push(d.body ? d.body.textContent : "");
+    }
+    return parts.join("\n\n");
+  }
+
+  async function handleFile(file) {
+    if (!file) return;
+    var name = file.name.toLowerCase();
+    try {
+      var text;
+      if (name.endsWith(".pdf")) text = await parsePdf(file);
+      else if (name.endsWith(".epub")) text = await parseEpub(file);
+      else text = await file.text(); // .txt and anything else
+      setParse("");
+      if (text && text.trim()) loadText(text.trim());
+      else setParse("No extractable text found in that file.");
+    } catch (e) {
+      setParse("Could not read file: " + e.message);
     }
   }
 
   /* =========================================================================
-     RENDERING — PRESENT (teleprompter) view
-     We render every word once as <w> elements, then on each step highlight
-     the current word and scroll so it stays vertically centred.
+     RENDER — READ (RSVP) view with fixed pivot
+     ========================================================================= */
+  function renderRead() {
+    if (!tokens.length) return;
+    elOrpLine.innerHTML = "";
+    var start = Math.max(0, index - 10);
+    var end = Math.min(tokens.length - 1, index + 14);
+    var pivotEl = null;
+
+    for (var i = start; i <= end; i++) {
+      var t = tokens[i];
+      if (i === index) {
+        var word = t.text;
+        var oi = orpIndex(word);
+        var wspan = document.createElement("span");
+        wspan.className = "w cur";
+        var before = document.createElement("span"); before.textContent = word.slice(0, oi);
+        var piv = document.createElement("span"); piv.className = "pivot"; piv.textContent = word.slice(oi, oi + 1);
+        var after = document.createElement("span"); after.textContent = word.slice(oi + 1);
+        wspan.appendChild(before); wspan.appendChild(piv); wspan.appendChild(after);
+        elOrpLine.appendChild(wspan);
+        pivotEl = piv;
+      } else {
+        var s = document.createElement("span");
+        s.className = "w";
+        s.textContent = t.text;
+        // dim by distance from the focal word
+        s.style.opacity = Math.max(0.18, 0.7 - Math.abs(i - index) * 0.11);
+        elOrpLine.appendChild(s);
+      }
+      elOrpLine.appendChild(document.createTextNode(" "));
+    }
+
+    // Pin the pivot letter to the fixed focal x by translating the whole line.
+    elOrpLine.style.transform = "none";
+    var clipRect = elOrpClip.getBoundingClientRect();
+    var focalX = clipRect.width * FOCAL_RATIO;
+    if (pivotEl) {
+      var pr = pivotEl.getBoundingClientRect();
+      var pivotCentre = pr.left + pr.width / 2 - clipRect.left;
+      elOrpLine.style.transform = "translateX(" + (focalX - pivotCentre) + "px)";
+    }
+    elOrpTicks.style.left = focalX + "px";
+  }
+
+  /* =========================================================================
+     RENDER — PRESENT (teleprompter) view
      ========================================================================= */
   function buildPresentDOM() {
     elScroll.innerHTML = "";
@@ -443,7 +490,6 @@
       w.textContent = tokens[i].text;
       w.dataset.i = i;
       elScroll.appendChild(w);
-      // keep paragraph breaks visible as real line breaks
       if (tokens[i].paraBreak) {
         elScroll.appendChild(document.createElement("br"));
         elScroll.appendChild(document.createElement("br"));
@@ -452,126 +498,190 @@
       }
     }
   }
-
   function renderPresent() {
     if (!tokens.length) return;
     var nodes = elScroll.querySelectorAll("w");
     for (var i = 0; i < nodes.length; i++) {
-      var n = nodes[i];
-      var ni = +n.dataset.i;
-      n.className = ni === index ? "cur" : (ni < index ? "read" : "");
+      var ni = +nodes[i].dataset.i;
+      nodes[i].className = ni === index ? "cur" : (ni < index ? "read" : "");
     }
-    // Scroll so the current word's centre aligns to the viewport centre.
     var cur = nodes[index];
     if (cur) {
       var stageH = elPresent.clientHeight;
       var wordCentre = cur.offsetTop + cur.offsetHeight / 2;
-      var offset = stageH / 2 - wordCentre;
-      elScroll.style.transform = "translateY(" + offset + "px)";
+      elScroll.style.transform = "translateY(" + (stageH / 2 - wordCentre) + "px)";
     }
   }
 
-  function render() {
-    if (view === "read") renderRead();
-    else renderPresent();
-    var pct = tokens.length ? ((index + 1) / tokens.length) * 100 : 0;
+  // Progress bar + status (current / total · % · time left) — both views.
+  function fmtTime(ms) {
+    var s = Math.round(ms / 1000);
+    var m = Math.floor(s / 60);
+    s = s % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function renderStatus() {
+    var total = tokens.length;
+    var cur = total ? index + 1 : 0;
+    var pct = total ? (cur / total) * 100 : 0;
     elProgress.style.width = pct + "%";
+    if (!total) { elStatus.textContent = ""; return; }
+    var ms = 0;
+    for (var i = index; i < total; i++) ms += dwellFor(tokens[i], wpm);
+    elStatus.textContent = cur + " / " + total + " · " + Math.round(pct) + "% · ~" + fmtTime(ms) + " left";
+  }
+
+  function render() {
+    if (view === "read") renderRead(); else renderPresent();
+    renderStatus();
   }
 
   /* =========================================================================
-     PLAYBACK LOOP
-     Self-scheduling setTimeout so every word can have its own dwell time.
+     PLAYBACK — self-scheduling so each word gets its own dwell.
      ========================================================================= */
   function tick() {
     render();
     if (!playing) return;
     if (index >= tokens.length - 1) { stop(); return; }
-    var dwell = dwellFor(tokens[index], wpm);
-    timer = setTimeout(function () {
-      index++;
-      tick();
-    }, dwell);
+    timer = setTimeout(function () { index++; tick(); }, dwellFor(tokens[index], wpm));
   }
-
   function play() {
     if (!tokens.length) return;
-    if (index >= tokens.length - 1) index = 0; // restart if at end
-    playing = true;
-    elPlay.textContent = "Pause";
-    tick();
+    if (index >= tokens.length - 1) index = 0;
+    playing = true; elPlay.textContent = "Pause"; tick();
   }
-
   function stop() {
-    playing = false;
-    elPlay.textContent = "Play";
+    playing = false; elPlay.textContent = "Play";
     if (timer) { clearTimeout(timer); timer = null; }
   }
-
   function togglePlay() { playing ? stop() : play(); }
-
-  function restart() {
-    stop();
-    index = 0;
-    render();
-  }
-
-  function step(delta) {
-    stop();
-    index = Math.min(tokens.length - 1, Math.max(0, index + delta));
-    render();
-  }
+  function restart() { stop(); index = 0; render(); }
+  function step(d) { stop(); index = Math.min(tokens.length - 1, Math.max(0, index + d)); render(); }
 
   /* =========================================================================
-     VIEW TOGGLE
+     VIEW / SPEED / THEME / FOCUS
      ========================================================================= */
   function setView(v) {
     view = v;
     var read = v === "read";
     elReadView.classList.toggle("hidden", !read);
     elPresent.classList.toggle("hidden", read);
-    elFixation.style.display = read && tokens.length ? "block" : "none";
+    elOrpTicks.style.display = read && tokens.length ? "block" : "none";
     elViewBtn.textContent = "View: " + (read ? "Read" : "Present");
-    // Apply this view's default speed.
     setWpm(DEFAULT_WPM[v]);
     render();
   }
+  function setWpm(v) { wpm = v; elWpm.value = v; elWpmVal.textContent = v; renderStatus(); }
 
-  function setWpm(v) {
-    wpm = v;
-    elWpm.value = v;
-    elWpmVal.textContent = v;
+  function setTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    elThemeBtn.textContent = t === "dark" ? "☀ Light" : "🌙 Dark";
+    try { localStorage.setItem("reader-theme", t); } catch (e) {}
+    if (tokens.length) render(); // re-measure (token colours unaffected, but harmless)
   }
+  function toggleTheme() {
+    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  }
+
+  function toggleFocus() {
+    document.body.classList.toggle("focus");
+    if (view === "present") renderPresent(); else renderRead();
+  }
+
+  /* =========================================================================
+     SAMPLE TEXT + WPM CALIBRATION
+     ========================================================================= */
+  var SAMPLE_TEXT =
+    "Rapid serial visual presentation, or RSVP, is a reading technique that " +
+    "shows words one at a time at a fixed point, so your eyes never have to " +
+    "jump across the page. Because you skip those tiny eye movements, you can " +
+    "often read noticeably faster while keeping comfortable comprehension.\n\n" +
+    "A good starting point is around 300 to 400 words per minute. Try the " +
+    "slider: push it higher until comprehension starts to slip, then ease back. " +
+    "Punctuation and longer words automatically get a little extra time, which " +
+    "keeps sentences from blurring together. Happy reading!";
+
+  var CALIB_TEXT =
+    "Reading speed varies from person to person, and the only way to find a " +
+    "pace that feels right for you is to measure it directly. Read this short " +
+    "passage the way you normally would, without rushing and without slowing " +
+    "down on purpose. When you reach the end, stop the timer right away. The " +
+    "app will divide the number of words by the time you took, giving you a " +
+    "comfortable baseline words-per-minute that you can then nudge up or down " +
+    "with the speed slider until it feels just right for the kind of text you " +
+    "happen to be reading at the moment.";
+  var CALIB_WORDS = CALIB_TEXT.split(/\s+/).filter(Boolean).length;
+  var calibStartTime = 0;
+
+  $("calibPassage").textContent = CALIB_TEXT;
 
   /* =========================================================================
      EVENTS
      ========================================================================= */
-  $("load").addEventListener("click", load);
-  $("toggleLoader").addEventListener("click", function () {
-    elLoader.classList.toggle("hidden");
-  });
-  elViewBtn.addEventListener("click", function () {
-    setView(view === "read" ? "present" : "read");
-  });
+  $("load").addEventListener("click", function () { loadText(elInput.value); });
+  $("sampleBtn").addEventListener("click", function () { loadText(SAMPLE_TEXT); });
+  $("toggleLoader").addEventListener("click", function () { elLoader.classList.toggle("hidden"); });
+  $("fileBtn").addEventListener("click", function () { $("fileInput").click(); });
+  $("fileInput").addEventListener("change", function (e) { handleFile(e.target.files[0]); });
+
+  elViewBtn.addEventListener("click", function () { setView(view === "read" ? "present" : "read"); });
   elPlay.addEventListener("click", togglePlay);
   elRestart.addEventListener("click", restart);
-  elWpm.addEventListener("input", function () {
-    setWpm(+elWpm.value);
-    // No need to restart the timer; the next scheduled tick uses new wpm.
+  elWpm.addEventListener("input", function () { setWpm(+elWpm.value); });
+  elThemeBtn.addEventListener("click", toggleTheme);
+  $("focusBtn").addEventListener("click", toggleFocus);
+  $("focusExit").addEventListener("click", toggleFocus);
+
+  // Click the progress bar to seek.
+  elProgWrap.addEventListener("click", function (e) {
+    if (!tokens.length) return;
+    var r = this.getBoundingClientRect();
+    var ratio = (e.clientX - r.left) / r.width;
+    stop();
+    index = Math.max(0, Math.min(tokens.length - 1, Math.floor(ratio * tokens.length)));
+    render();
+  });
+
+  // Calibration
+  $("calibBtn").addEventListener("click", function () { $("calib").classList.toggle("open"); });
+  $("calibStart").addEventListener("click", function () {
+    calibStartTime = Date.now();
+    $("calibDone").disabled = false;
+    $("calibResult").textContent = "Reading… press Done when finished.";
+  });
+  $("calibDone").addEventListener("click", function () {
+    if (!calibStartTime) return;
+    var mins = (Date.now() - calibStartTime) / 60000;
+    var measured = Math.round(CALIB_WORDS / mins);
+    measured = Math.max(+elWpm.min, Math.min(+elWpm.max, measured));
+    setWpm(measured);
+    $("calibResult").textContent = "Your pace ≈ " + measured + " wpm — applied to the slider.";
+    $("calibDone").disabled = true;
+    calibStartTime = 0;
   });
 
   document.addEventListener("keydown", function (e) {
-    if (e.target === elInput) return; // don't hijack typing
+    if (e.target === elInput) return;
     if (e.code === "Space") { e.preventDefault(); togglePlay(); }
     else if (e.code === "ArrowRight") { e.preventDefault(); step(1); }
     else if (e.code === "ArrowLeft") { e.preventDefault(); step(-1); }
     else if (e.key === "r" || e.key === "R") { restart(); }
+    else if (e.key === "f" || e.key === "F") { toggleFocus(); }
+    else if (e.key === "Escape" && document.body.classList.contains("focus")) { toggleFocus(); }
   });
 
   window.addEventListener("resize", function () {
-    if (view === "present") renderPresent();
+    if (view === "present") renderPresent(); else renderRead();
   });
 
-  // Init defaults.
+  // ---- Init ----
+  (function initTheme() {
+    var saved;
+    try { saved = localStorage.getItem("reader-theme"); } catch (e) {}
+    if (!saved) saved = window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    setTheme(saved);
+  })();
   setWpm(DEFAULT_WPM.read);
 })();
 </script>
