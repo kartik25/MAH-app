@@ -29,8 +29,19 @@ targets:
       base:
         INFOPLIST_FILE: NotchReader/Info.plist
         GENERATE_INFOPLIST_FILE: NO
+        # WKWebView under App Sandbox needs network.client or its helper
+        # processes crash; see NotchReader.entitlements.
+        CODE_SIGN_ENTITLEMENTS: NotchReader/NotchReader.entitlements
     sources:
       - path: NotchReader
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+      # keep these in the project but out of any build phase
+      - path: NotchReader/Info.plist
+        buildPhase: none
+      - path: NotchReader/NotchReader.entitlements
+        buildPhase: none
       # The reading engine — single source of truth at the repo root, bundled
       # into Resources/. All reading logic lives here; Swift only owns the window.
       - path: ../index.html

@@ -45,7 +45,13 @@ Select your Personal Team (free Apple ID is fine) under
    **Copy Bundle Resources** phase.
 4. In the target's Info settings, set **Application is agent (UIElement)** =
    `YES` (this is `LSUIElement` in `Info.plist`).
-5. Set the deployment target to the macOS on your machine, pick your Team, Run.
+5. **App Sandbox + WKWebView:** if the template left App Sandbox on, you MUST
+   enable **Outgoing Connections (Client)** under the App Sandbox capability —
+   otherwise WebKit's helper processes are killed and the strip is blank
+   (`errno=34`, GPU/Network/WebContent "Crash"). Either tick that box, point
+   `CODE_SIGN_ENTITLEMENTS` at the bundled `NotchReader.entitlements`, or remove
+   the App Sandbox capability entirely.
+6. Set the deployment target to the macOS on your machine, pick your Team, Run.
 
 ## Decisions taken (and how to change them)
 
@@ -123,3 +129,14 @@ works opened directly in a browser):
 7. Offline: launches and plays from bundled `index.html` with no network
    (paste / TXT path; PDF/EPUB import needs network, by design).
 8. Free Apple ID (Personal Team) builds and runs locally on this Mac.
+
+## Troubleshooting
+
+- **Blank strip + console spam** `Application does not have permission to
+  communicate with network resources. rc=1 : errno=34`, `GPUProcessProxy …
+  reason=Crash`, `WebProcessProxy … web process failed to launch`: App Sandbox
+  is missing **network.client**. Tick *App Sandbox → Outgoing Connections
+  (Client)*, or point `CODE_SIGN_ENTITLEMENTS` at the bundled
+  `NotchReader.entitlements`, or remove the App Sandbox capability. The
+  `networkd_settings_read_from_file_locked` and `layoutSubtreeIfNeeded` lines
+  are harmless noise that disappear once the web process launches.

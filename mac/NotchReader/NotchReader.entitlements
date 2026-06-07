@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Sandbox on. Remove this whole file (and CODE_SIGN_ENTITLEMENTS)
+	     if you'd rather run unsandboxed locally. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- REQUIRED for WKWebView: without it the GPU/Network/WebContent helper
+	     processes are killed by the sandbox ("does not have permission to
+	     communicate with network resources. errno=34"), even for a local file.
+	     Also needed for the PDF/EPUB parser CDN fetch. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Lets the Composer's "Open file" panel read a user-chosen .txt/.pdf/.epub. -->
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+</dict>
+</plist>
