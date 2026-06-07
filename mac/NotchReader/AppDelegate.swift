@@ -4,7 +4,21 @@ import Combine
 /// Wires the pieces together: the web controller (engine host), the floating
 /// strip window, the status-bar item, Preferences, the global hotkey, and the
 /// hover-pause behaviour. Holds no reading logic of its own.
+@main
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Program entry point — AppKit lifecycle, no storyboard. `@main` plus
+    /// `@MainActor` keeps the `app.delegate` assignment on the main actor,
+    /// which Swift 6's language mode requires (the NSApplicationDelegate
+    /// conformance is main-actor isolated). Replaces the old `main.swift`.
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.setActivationPolicy(.accessory)
+        app.run()
+    }
+
     private let settings = Settings.shared
     private let web = WebController()
     private lazy var prompter = PrompterWindowController(web: web)

@@ -38,11 +38,15 @@ Select your Personal Team (free Apple ID is fine) under
 1. Xcode → New Project → **macOS → App**. Interface: *(doesn't matter)*,
    Language: **Swift**. Then delete the generated `App.swift`/`ContentView.swift`
    and `Main` storyboard, and remove the `NSMainStoryboardFile`/principal-class
-   storyboard entry — this project uses an AppKit `main.swift` entry point.
+   storyboard entry — the entry point is `@main` on `AppDelegate.swift` (no
+   `main.swift`, no storyboard).
 2. Drag every file in `mac/NotchReader/` into the project (check *Copy items*
    off if you want them to stay in-repo, on if you prefer Xcode-managed copies).
 3. Drag the repo-root `index.html` into the project and add it to the target's
    **Copy Bundle Resources** phase.
+   **Set Build Settings → Swift Language Version → Swift 5** (Swift 6 strict
+   concurrency throws errors like *"Main actor-isolated conformance … cannot be
+   used in nonisolated context"*; the XcodeGen project already pins Swift 5).
 4. In the target's Info settings, set **Application is agent (UIElement)** =
    `YES` (this is `LSUIElement` in `Info.plist`).
 5. **App Sandbox + WKWebView:** if the template left App Sandbox on, you MUST
@@ -132,6 +136,15 @@ works opened directly in a browser):
 
 ## Troubleshooting
 
+- **`Main actor-isolated conformance of 'AppDelegate' … cannot be used in
+  nonisolated context`**: the target is building in the Swift 6 language mode.
+  Set Build Settings → **Swift Language Version → Swift 5** (the XcodeGen
+  project pins this). The `@main`/`@MainActor` entry point also addresses the
+  specific delegate-assignment case.
+- **`refers to the path "NotchReader", but the capitalization on disk is
+  "NotchReader 19-19-52-171"`**: your hand-made `.xcodeproj` got a duplicate /
+  timestamped group. Easiest fix is to stop hand-maintaining it — delete the
+  `.xcodeproj` and run `xcodegen generate` for a clean, correct project.
 - **Blank strip + console spam** `Application does not have permission to
   communicate with network resources. rc=1 : errno=34`, `GPUProcessProxy …
   reason=Crash`, `WebProcessProxy … web process failed to launch`: App Sandbox
