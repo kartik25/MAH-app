@@ -55,11 +55,16 @@ Select your Personal Team (free Apple ID is fine) under
 - **Project generation:** XcodeGen `project.yml` instead of a hand-written
   `.xcodeproj` (a hand-written pbxproj couldn't be validated here and breaks
   easily). Manual path documented above as a fallback.
-- **Window level:** defaults to `.statusBar` (`FloatLevel.normal`). If the strip
-  ever vanishes behind a full-screen Keynote slideshow, turn on **"Float above
-  full-screen apps (aggressive level)"** in Preferences → escalates to
-  `CGShieldingWindowLevel()`. Both live in one place:
-  `PrompterWindowController.FloatLevel`.
+- **Window level:** ships **aggressive by default** — `CGShieldingWindowLevel()`
+  (`FloatLevel.aggressive`), so it's guaranteed over full-screen slideshows out
+  of the box. Turn off **"Float above full-screen apps (aggressive level)"** in
+  Preferences to drop back to `.statusBar` if it feels intrusive. Both levels
+  live in one place: `PrompterWindowController.FloatLevel`.
+- **Getting text into the strip:** the strip boots empty; two ways to feed it —
+  *Load from Clipboard* (⌘V in the menu) pushes clipboard text straight in; or
+  *Open Composer…* opens a normal window hosting the full reader (paste, .txt/
+  .pdf/.epub import, sample, calibrate) with a **Send to Strip** button that
+  reuses the HTML loader via `Reader.getText()`.
 - **Hotkey:** ⌃⌥Space. Both a *local* monitor (zero-permission, works when the
   strip is focused) and a *global* monitor (works while Keynote is frontmost,
   but only once **Accessibility** is granted). No Carbon dependency.
@@ -96,6 +101,7 @@ works opened directly in a browser):
 | `FloatingPanel.swift` | Key-capable borderless window + hover tracking view |
 | `PrompterWindowController.swift` | **Core:** level, collectionBehavior, position, drag-clamp |
 | `StatusItemController.swift` | Menu-bar item + menu |
+| `ComposerWindow.swift` | Full-reader window to load text and send to the strip |
 | `HotKeyManager.swift` | Global/local ⌃⌥Space play-pause |
 | `PreferencesWindow.swift` | SwiftUI Preferences panel |
 

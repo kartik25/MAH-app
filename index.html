@@ -760,6 +760,7 @@
     restart: restart,
     step: function (d) { step(+d || 1); },
     load: function (text) { loadText(String(text == null ? "" : text)); },
+    getText: function () { return elInput.value || ""; },
     setView: setView,
     setChrome: setChrome,
     setTextSize: function (px) {           // px font-size for the Present line

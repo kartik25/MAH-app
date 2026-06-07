@@ -11,6 +11,8 @@ final class StatusItemController: NSObject {
     var onFaster: (() -> Void)?
     var onSlower: (() -> Void)?
     var onPreferences: (() -> Void)?
+    var onLoadClipboard: (() -> Void)?
+    var onOpenComposer: (() -> Void)?
 
     override init() {
         super.init()
@@ -29,6 +31,9 @@ final class StatusItemController: NSObject {
         playItem.target = self
         playItem.action = #selector(playPause)
         menu.addItem(playItem)
+        menu.addItem(.separator())
+        add(menu, "Load from Clipboard", #selector(loadClipboard), "v")
+        add(menu, "Open Composer…", #selector(openComposer))
         menu.addItem(.separator())
         add(menu, "Faster (+20 wpm)", #selector(faster))
         add(menu, "Slower (−20 wpm)", #selector(slower))
@@ -50,6 +55,8 @@ final class StatusItemController: NSObject {
         playItem.title = playing ? "Pause" : "Play"
     }
 
+    @objc private func loadClipboard() { onLoadClipboard?() }
+    @objc private func openComposer()  { onOpenComposer?() }
     @objc private func playPause()  { onPlayPause?() }
     @objc private func faster()     { onFaster?() }
     @objc private func slower()     { onSlower?() }

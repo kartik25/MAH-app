@@ -25,7 +25,9 @@ final class Settings: ObservableObject {
             "stripHeight": 120,
             "pauseOnHover": true,
             "clickThrough": false,
-            "aggressiveLevel": false
+            // Ship guaranteed-over-full-screen (CGShieldingWindowLevel) by
+            // default; toggle down in Preferences if it feels too intrusive.
+            "aggressiveLevel": true
         ])
         wpm             = d.integer(forKey: "wpm")
         textSize        = d.double(forKey: "textSize")

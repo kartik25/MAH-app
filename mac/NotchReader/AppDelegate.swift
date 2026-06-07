@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var prompter = PrompterWindowController(web: web)
     private let statusItem = StatusItemController()
     private let prefs = PreferencesWindowController()
+    private let composer = ComposerWindowController()
     private let hotkeys = HotKeyManager()
 
     private var cancellables = Set<AnyCancellable>()
@@ -51,6 +52,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.onFaster      = { [weak self] in self?.bumpWpm(20) }
         statusItem.onSlower      = { [weak self] in self?.bumpWpm(-20) }
         statusItem.onPreferences = { [weak self] in self?.prefs.show() }
+        statusItem.onLoadClipboard = { [weak self] in self?.loadFromClipboard() }
+        statusItem.onOpenComposer  = { [weak self] in self?.composer.show() }
+
+        // Composer "Send to Strip" -> push text into the floating strip & play.
+        composer.onSendText = { [weak self] text in
+            guard let self = self else { return }
+            self.web.load(text: text)
+            self.prompter.show()
+            self.web.play()
+        }
 
         bindSettings()
 
@@ -65,6 +76,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func bumpWpm(_ delta: Int) {
         settings.wpm = max(60, min(900, settings.wpm + delta))
+    }
+
+    private func loadFromClipboard() {
+        guard let text = NSPasteboard.general.string(forType: .string),
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        web.load(text: text)
+        prompter.show()
+        web.play()
     }
 
     /// Observe each setting and apply its side-effect. `@Published` delivers the
