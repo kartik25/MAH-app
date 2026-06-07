@@ -21,19 +21,32 @@ full-screen Keynote/PowerPoint slideshow.
 The reading engine `index.html` lives at the **repo root** (single source of
 truth) and is bundled into the app's `Resources/` at build time.
 
-### Option A — XcodeGen (recommended)
+### Option A — Open the committed project (no tools needed)
+
+A ready-to-run `mac/NotchReader.xcodeproj` is checked in (Swift 5 mode,
+entitlements + `LSUIElement` + `index.html` resource all wired):
+
+```bash
+open mac/NotchReader.xcodeproj
+```
+
+Pick your Team under *Signing & Capabilities* (free Apple ID is fine), then Run.
+If you add/remove source files, either add them in Xcode or regenerate via
+Option B.
+
+### Option B — XcodeGen (regenerates the project from project.yml)
 
 ```bash
 brew install xcodegen          # one-time
 cd mac
-xcodegen generate              # creates NotchReader.xcodeproj
+xcodegen generate              # re-creates NotchReader.xcodeproj
 open NotchReader.xcodeproj
 ```
 
 Select your Personal Team (free Apple ID is fine) under
 *Signing & Capabilities*, then Run.
 
-### Option B — Manual Xcode project
+### Option C — Manual Xcode project
 
 1. Xcode → New Project → **macOS → App**. Interface: *(doesn't matter)*,
    Language: **Swift**. Then delete the generated `App.swift`/`ContentView.swift`
