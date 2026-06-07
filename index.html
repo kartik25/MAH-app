@@ -156,6 +156,29 @@
   body.focus header, body.focus .loader { display: none; }
   .focus-exit { position: absolute; top: 14px; right: 14px; z-index: 6; display: none; }
   body.focus .focus-exit { display: inline-flex; }
+
+  /* ---------- Embedded "strip" mode (native notch teleprompter wrapper) ----
+     Activated by ?chrome=off. The page goes transparent and the Present view
+     becomes a rounded dark bar drawn by the HTML itself, so the hosting
+     NSWindow can stay clear/borderless. All chrome is hidden. The reading
+     engine is otherwise untouched — Swift only owns the window. */
+  body.chrome-off { background: transparent; }
+  body.chrome-off header,
+  body.chrome-off .loader,
+  body.chrome-off .focus-exit,
+  body.chrome-off .status,
+  body.chrome-off .progress-wrap { display: none !important; }
+  body.chrome-off #presentView {
+    background: rgba(12,12,14,.82);
+    border-radius: 16px;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  body.chrome-off .present-scroll { color: #fff; }
+  body.chrome-off .present-scroll w { color: rgba(255,255,255,.32); }
+  body.chrome-off .present-scroll w.read { color: rgba(255,255,255,.5); }
+  body.chrome-off .present-scroll w.cur {
+    color: #fff; background: rgba(245,158,11,.40); }
 </style>
 </head>
 <body>
@@ -350,6 +373,7 @@
       elOrpTicks.style.display = "none";
     }
     render();
+    emitState();
   }
 
   // Lazy CDN loader — only fetched when a PDF/EPUB is actually opened, so the
@@ -545,14 +569,23 @@
     if (index >= tokens.length - 1) { stop(); return; }
     timer = setTimeout(function () { index++; tick(); }, dwellFor(tokens[index], wpm));
   }
+  // JS -> Swift: report playing/paused so a native menu can mirror state.
+  // No-op in a plain browser (the message handler only exists in the wrapper).
+  function emitState() {
+    try {
+      window.webkit.messageHandlers.state.postMessage(
+        { playing: playing, index: index, total: tokens.length });
+    } catch (e) {}
+  }
   function play() {
     if (!tokens.length) return;
     if (index >= tokens.length - 1) index = 0;
-    playing = true; elPlay.textContent = "Pause"; tick();
+    playing = true; elPlay.textContent = "Pause"; tick(); emitState();
   }
   function stop() {
     playing = false; elPlay.textContent = "Play";
     if (timer) { clearTimeout(timer); timer = null; }
+    emitState();
   }
   function togglePlay() { playing ? stop() : play(); }
   function restart() { stop(); index = 0; render(); }
@@ -586,6 +619,14 @@
   function toggleFocus() {
     document.body.classList.toggle("focus");
     if (view === "present") renderPresent(); else renderRead();
+  }
+
+  // ?chrome=off strip mode — reuses the same hide path as Focus, plus a
+  // transparent page so the native window can be clear/borderless.
+  function setChrome(off) {
+    document.body.classList.toggle("chrome-off", !!off);
+    document.documentElement.style.background = off ? "transparent" : "";
+    if (tokens.length) render();
   }
 
   /* =========================================================================
@@ -683,6 +724,52 @@
     setTheme(saved);
   })();
   setWpm(DEFAULT_WPM.read);
+
+  /* =========================================================================
+     QUERY-PARAM BOOT + window.Reader BRIDGE
+     -------------------------------------------------------------------------
+     Lets a native wrapper (the macOS notch teleprompter) boot straight into
+     the scrolling Present view with all chrome hidden, and drive playback
+     from Swift via evaluateJavaScript. This is purely additive — opened
+     directly in a browser with no params, everything behaves as before.
+       index.html?mode=present&chrome=off
+     ========================================================================= */
+  function getParams() {
+    var p = {};
+    (location.search || "").replace(/^\?/, "").split("&").forEach(function (kv) {
+      if (!kv) return;
+      var i = kv.indexOf("=");
+      var k = i < 0 ? kv : kv.slice(0, i);
+      p[k] = i < 0 ? "" : decodeURIComponent(kv.slice(i + 1));
+    });
+    return p;
+  }
+  (function boot() {
+    var p = getParams();
+    if (p.mode === "present") setView("present");
+    if (p.chrome === "off") setChrome(true);
+  })();
+
+  // Minimal, stable surface for the Swift bridge. Reading logic stays here.
+  window.Reader = {
+    setWpm: function (n) { setWpm(+n); },
+    play: play,
+    pause: stop,
+    stop: stop,
+    toggle: togglePlay,
+    restart: restart,
+    step: function (d) { step(+d || 1); },
+    load: function (text) { loadText(String(text == null ? "" : text)); },
+    setView: setView,
+    setChrome: setChrome,
+    setTextSize: function (px) {           // px font-size for the Present line
+      elScroll.style.fontSize = (+px) + "px";
+      if (view === "present") renderPresent();
+    },
+    state: function () {
+      return { playing: playing, index: index, total: tokens.length, view: view };
+    }
+  };
 })();
 </script>
 </body>

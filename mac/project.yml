@@ -1,0 +1,37 @@
+# XcodeGen spec — generates NotchReader.xcodeproj from these sources.
+#
+#   brew install xcodegen      # one-time
+#   cd mac && xcodegen generate && open NotchReader.xcodeproj
+#
+# (If you don't want XcodeGen, see README.md for the manual "new Xcode
+#  project + drag the files in" path — the Swift sources are identical.)
+name: NotchReader
+options:
+  bundleIdPrefix: com.reader
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "13.0"        # bump/lower to match the macOS on this machine
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    PRODUCT_BUNDLE_IDENTIFIER: com.reader.notchreader
+    CODE_SIGN_STYLE: Automatic           # Personal Team / free Apple ID is fine
+    ENABLE_HARDENED_RUNTIME: YES
+targets:
+  NotchReader:
+    type: application
+    platform: macOS
+    info:
+      path: NotchReader/Info.plist
+    settings:
+      base:
+        INFOPLIST_FILE: NotchReader/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+    sources:
+      - path: NotchReader
+      # The reading engine — single source of truth at the repo root, bundled
+      # into Resources/. All reading logic lives here; Swift only owns the window.
+      - path: ../index.html
+        buildPhase: resources
